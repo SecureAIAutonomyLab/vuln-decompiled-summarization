@@ -1,0 +1,5 @@
+datasets>=2.18.0
+flash-attn>=2.5.6 # pip install flash-attn --no-build-isolation
+tree-sitter>=0.20.4
+transformers[torch,deepspeed]>=4.39.1
+typer[all]>=0.9.0
