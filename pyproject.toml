@@ -3,7 +3,7 @@ requires = ["setuptools>=61.0"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "your_package"
+name = "vdsum"
 version = "1.0.0"
 authors = [
   { name="Your Name", email="your.name@utsa.edu" },
@@ -21,8 +21,8 @@ dependencies = [
 ]
 
 [project.urls]
-"Homepage" = "https://github.com/SecureAIAutonomyLab/your_package"
-"Bug Tracker" = "https://github.com/SecureAIAutonomyLab/your_package/issues"
+"Homepage" = "https://github.com/SecureAIAutonomyLab/vuln-decompiled-summarization"
+"Bug Tracker" = "https://github.com/SecureAIAutonomyLab/vuln-decompiled-summarization/issues"
 
 [tool.pytest.ini_options]
 addopts = "-ra"
