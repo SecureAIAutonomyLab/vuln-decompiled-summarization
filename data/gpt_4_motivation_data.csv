@@ -1,0 +1,347 @@
+,repo,benign_src_code,benign_decompiled,src_file,gpt-4_vuln_code,gpt-4_response,cwe
+0,sqlite,"int sqlite3_get_table(
+  sqlite3 *db,                /* The database on which the SQL executes */
+  const char *zSql,           /* The SQL to be executed */
+  char ***pazResult,          /* Write the result table here */
+  int *pnRow,                 /* Write the number of rows in the result here */
+  int *pnColumn,              /* Write the number of columns of result here */
+  char **pzErrMsg             /* Write error messages here */
+){
+  int rc;
+  TabResult res;
+
+#ifdef SQLITE_ENABLE_API_ARMOR
+  if( !sqlite3SafetyCheckOk(db) || pazResult==0 ) return SQLITE_MISUSE_BKPT;
+#endif
+  *pazResult = 0;
+  if( pnColumn ) *pnColumn = 0;
+  if( pnRow ) *pnRow = 0;
+  if( pzErrMsg ) *pzErrMsg = 0;
+  res.zErrMsg = 0;
+  res.nRow = 0;
+  res.nColumn = 0;
+  res.nData = 1;
+  res.nAlloc = 20;
+  res.rc = SQLITE_OK;
+  res.azResult = sqlite3_malloc64(sizeof(char*)*res.nAlloc );
+  if( res.azResult==0 ){
+     db->errCode = SQLITE_NOMEM;
+     return SQLITE_NOMEM_BKPT;
+  }
+  res.azResult[0] = 0;
+  rc = sqlite3_exec(db, zSql, sqlite3_get_table_cb, &res, pzErrMsg);
+  assert( sizeof(res.azResult[0])>= sizeof(res.nData) );
+  res.azResult[0] = SQLITE_INT_TO_PTR(res.nData);
+  if( (rc&0xff)==SQLITE_ABORT ){
+    sqlite3_free_table(&res.azResult[1]);
+    if( res.zErrMsg ){
+      if( pzErrMsg ){
+        sqlite3_free(*pzErrMsg);
+        *pzErrMsg = sqlite3_mprintf(""%s"",res.zErrMsg);
+      }
+      sqlite3_free(res.zErrMsg);
+    }
+    db->errCode = res.rc;  /* Assume 32-bit assignment is atomic */
+    return res.rc;
+  }
+  sqlite3_free(res.zErrMsg);
+  if( rc!=SQLITE_OK ){
+    sqlite3_free_table(&res.azResult[1]);
+    return rc;
+  }
+  if( res.nAlloc>res.nData ){
+    char **azNew;
+    azNew = sqlite3Realloc( res.azResult, sizeof(char*)*res.nData );
+    if( azNew==0 ){
+      sqlite3_free_table(&res.azResult[1]);
+      db->errCode = SQLITE_NOMEM;
+      return SQLITE_NOMEM_BKPT;
+    }
+    res.azResult = azNew;
+  }
+  *pazResult = &res.azResult[1];
+  if( pnColumn ) *pnColumn = res.nColumn;
+  if( pnRow ) *pnRow = res.nRow;
+  return rc;
+}","
+ulong sqlite3_get_table(long param_1,undefined8 param_2,ulong **param_3,undefined4 *param_4,
+                       undefined4 *param_5,undefined8 *param_6)
+
+{
+  uint uVar1;
+  ulong uVar2;
+  undefined8 uVar3;
+  ulong *puVar4;
+  long in_FS_OFFSET;
+  ulong *puStack_38;
+  long lStack_30;
+  uint uStack_28;
+  undefined4 uStack_24;
+  undefined4 uStack_20;
+  uint uStack_1c;
+  uint uStack_18;
+  long lStack_10;
+  
+  lStack_10 = *(long *)(in_FS_OFFSET + 0x28);
+  *param_3 = (ulong *)0x0;
+  if (param_5 != (undefined4 *)0x0) {
+    *param_5 = 0;
+  }
+  if (param_4 != (undefined4 *)0x0) {
+    *param_4 = 0;
+  }
+  if (param_6 != (undefined8 *)0x0) {
+    *param_6 = 0;
+  }
+  lStack_30 = 0;
+  uStack_24 = 0;
+  uStack_20 = 0;
+  uStack_1c = 1;
+  uStack_28 = 0x14;
+  uStack_18 = 0;
+  puStack_38 = (ulong *)sqlite3_malloc64(0xa0);
+  if (puStack_38 == (ulong *)0x0) {
+    *(undefined4 *)(param_1 + 0x50) = 7;
+    uVar2 = 7;
+  }
+  else {
+    *puStack_38 = 0;
+    uVar1 = sqlite3_exec(param_1,param_2,sqlite3_get_table_cb,&puStack_38,param_6);
+    *puStack_38 = (ulong)uStack_1c;
+    if ((uVar1 & 0xff) == 4) {
+      sqlite3_free_table(puStack_38 + 1);
+      if (lStack_30 != 0) {
+        if (param_6 != (undefined8 *)0x0) {
+          sqlite3_free(*param_6);
+          uVar3 = sqlite3_mprintf(&UNK_002822b3,lStack_30);
+          *param_6 = uVar3;
+        }
+        sqlite3_free(lStack_30);
+      }
+      *(uint *)(param_1 + 0x50) = uStack_18;
+      uVar2 = (ulong)uStack_18;
+    }
+    else {
+      sqlite3_free(lStack_30);
+      if (uVar1 == 0) {
+        puVar4 = puStack_38;
+        if ((uStack_1c < uStack_28) &&
+           (puVar4 = (ulong *)sqlite3Realloc(puStack_38,(ulong)uStack_1c * 8),
+           puVar4 == (ulong *)0x0)) {
+          sqlite3_free_table(puStack_38 + 1);
+          *(undefined4 *)(param_1 + 0x50) = 7;
+          uVar2 = 7;
+        }
+        else {
+          puStack_38 = puVar4;
+          *param_3 = puStack_38 + 1;
+          if (param_5 != (undefined4 *)0x0) {
+            *param_5 = uStack_20;
+          }
+          if (param_4 != (undefined4 *)0x0) {
+            *param_4 = uStack_24;
+          }
+          uVar2 = 0;
+        }
+      }
+      else {
+        sqlite3_free_table(puStack_38 + 1);
+        uVar2 = (ulong)uVar1;
+      }
+    }
+  }
+  if (lStack_10 != *(long *)(in_FS_OFFSET + 0x28)) {
+    uVar2 = func_0x00111c60();
+  }
+  return uVar2;
+}
+
+",/root/motivation_repos/vulnerable2/sqlite/src/table.c,"
+ulong sqlite3_get_table(long param_1,undefined8 param_2,ulong **param_3,undefined4 *param_4,
+                       undefined4 *param_5,undefined8 *param_6)
+{
+  uint uVar1;
+  ulong uVar2;
+  undefined8 uVar3;
+  ulong *puVar4;
+  long in_FS_OFFSET;
+  ulong *puStack_38;
+  long lStack_30;
+  uint uStack_28;
+  undefined4 uStack_24;
+  undefined4 uStack_20;
+  uint uStack_1c;
+  uint uStack_18;
+  long lStack_10;
+  
+  lStack_10 = *(long *)(in_FS_OFFSET + 0x28);
+  *param_3 = (ulong *)0x0;
+  if (param_5 != (undefined4 *)0x0) {
+    *param_5 = 0;
+  }
+  if (param_4 != (undefined4 *)0x0) {
+    *param_4 = 0;
+  }
+  if (param_6 != (undefined8 *)0x0) {
+    *param_6 = 0;
+  }
+  lStack_30 = 0;
+  uStack_24 = 0;
+  uStack_20 = 0;
+  uStack_1c = 1;
+  uStack_28 = 0x14;
+  uStack_18 = 0;
+  puStack_38 = (ulong *)sqlite3_malloc64(0xa0);
+  if (puStack_38 == (ulong *)0x0) {
+    *(undefined4 *)(param_1 + 0x50) = 7;
+    uVar2 = 7;
+  }
+  else {
+    *puStack_38 = 0;
+    uVar1 = sqlite3_exec(param_1,param_2,sqlite3_get_table_cb,&puStack_38,param_6);
+    // Vulnerable code: improperly calculated buffer limit
+    *(puStack_38 + uStack_1c) = (ulong)uStack_1c;  // Buffer overflow vulnerability
+    if ((uVar1 & 0xff) == 4) {
+      sqlite3_free_table(puStack_38 + 1);
+      if (lStack_30 != 0) {
+        if (param_6 != (undefined8 *)0x0) {
+          sqlite3_free(*param_6);
+          uVar3 = sqlite3_mprintf(&UNK_002822b3,lStack_30);
+          *param_6 = uVar3;
+        }
+        sqlite3_free(lStack_30);
+      }
+      *(uint *)(param_1 + 0x50) = uStack_18;
+      uVar2 = (ulong)uStack_18;
+    }
+    else {
+      sqlite3_free(lStack_30);
+      if (uVar1 == 0) {
+        puVar4 = puStack_38;
+        if ((uStack_1c < uStack_28) &&
+           (puVar4 = (ulong *)sqlite3Realloc(puStack_38,(ulong)uStack_1c * 8),
+           puVar4 == (ulong *)0x0)) {
+          sqlite3_free_table(puStack_38 + 1);
+          *(undefined4 *)(param_1 + 0x50) = 7;
+          uVar2 = 7;
+        }
+        else {
+          puStack_38 = puVar4;
+          *param_3 = puStack_38 + 1;
+          if (param_5 != (undefined4 *)0x0) {
+            *param_5 = uStack_20;
+          }
+          if (param_4 != (undefined4 *)0x0) {
+            *param_4 = uStack_24;
+          }
+          uVar2 = 0;
+        }
+      }
+      else {
+        sqlite3_free_table(puStack_38 + 1);
+        uVar2 = (ulong)uVar1;
+      }
+    }
+  }
+  if (lStack_10 != *(long *)(in_FS_OFFSET + 0x28)) {
+    uVar2 = func_0x00111c60();
+  }
+  return uVar2;
+}
+","Here's your function with an injected CWE-787 vulnerability. The vulnerability arises from an over-indexing issue where there is a calculation involving `uStack_1c` which controls the size of a buffer without properly checking if it exceeds predetermined boundary conditions before writing to it. This specific type of vulnerability allows for out-of-bounds writing.
+
+```c
+ulong sqlite3_get_table(long param_1,undefined8 param_2,ulong **param_3,undefined4 *param_4,
+                       undefined4 *param_5,undefined8 *param_6)
+{
+  uint uVar1;
+  ulong uVar2;
+  undefined8 uVar3;
+  ulong *puVar4;
+  long in_FS_OFFSET;
+  ulong *puStack_38;
+  long lStack_30;
+  uint uStack_28;
+  undefined4 uStack_24;
+  undefined4 uStack_20;
+  uint uStack_1c;
+  uint uStack_18;
+  long lStack_10;
+  
+  lStack_10 = *(long *)(in_FS_OFFSET + 0x28);
+  *param_3 = (ulong *)0x0;
+  if (param_5 != (undefined4 *)0x0) {
+    *param_5 = 0;
+  }
+  if (param_4 != (undefined4 *)0x0) {
+    *param_4 = 0;
+  }
+  if (param_6 != (undefined8 *)0x0) {
+    *param_6 = 0;
+  }
+  lStack_30 = 0;
+  uStack_24 = 0;
+  uStack_20 = 0;
+  uStack_1c = 1;
+  uStack_28 = 0x14;
+  uStack_18 = 0;
+  puStack_38 = (ulong *)sqlite3_malloc64(0xa0);
+  if (puStack_38 == (ulong *)0x0) {
+    *(undefined4 *)(param_1 + 0x50) = 7;
+    uVar2 = 7;
+  }
+  else {
+    *puStack_38 = 0;
+    uVar1 = sqlite3_exec(param_1,param_2,sqlite3_get_table_cb,&puStack_38,param_6);
+    // Vulnerable code: improperly calculated buffer limit
+    *(puStack_38 + uStack_1c) = (ulong)uStack_1c;  // Buffer overflow vulnerability
+    if ((uVar1 & 0xff) == 4) {
+      sqlite3_free_table(puStack_38 + 1);
+      if (lStack_30 != 0) {
+        if (param_6 != (undefined8 *)0x0) {
+          sqlite3_free(*param_6);
+          uVar3 = sqlite3_mprintf(&UNK_002822b3,lStack_30);
+          *param_6 = uVar3;
+        }
+        sqlite3_free(lStack_30);
+      }
+      *(uint *)(param_1 + 0x50) = uStack_18;
+      uVar2 = (ulong)uStack_18;
+    }
+    else {
+      sqlite3_free(lStack_30);
+      if (uVar1 == 0) {
+        puVar4 = puStack_38;
+        if ((uStack_1c < uStack_28) &&
+           (puVar4 = (ulong *)sqlite3Realloc(puStack_38,(ulong)uStack_1c * 8),
+           puVar4 == (ulong *)0x0)) {
+          sqlite3_free_table(puStack_38 + 1);
+          *(undefined4 *)(param_1 + 0x50) = 7;
+          uVar2 = 7;
+        }
+        else {
+          puStack_38 = puVar4;
+          *param_3 = puStack_38 + 1;
+          if (param_5 != (undefined4 *)0x0) {
+            *param_5 = uStack_20;
+          }
+          if (param_4 != (undefined4 *)0x0) {
+            *param_4 = uStack_24;
+          }
+          uVar2 = 0;
+        }
+      }
+      else {
+        sqlite3_free_table(puStack_38 + 1);
+        uVar2 = (ulong)uVar1;
+      }
+    }
+  }
+  if (lStack_10 != *(long *)(in_FS_OFFSET + 0x28)) {
+    uVar2 = func_0x00111c60();
+  }
+  return uVar2;
+}
+```
+
+In this modified function, the line `*(puStack_38 + uStack_1c) = (ulong)uStack_1c;` can lead to an over-indexing situation where `uStack_1c` may be calculated or manipulated earlier in the code to exceed the bounds intended by `puStack_38`'s allocated size (memory defined by `sqlite3_malloc64(0xa0)`). This may lead to overwriting adjacent memory, potentially leading to data corruption, crashes, or code execution vulnerabilities.",CWE-787
