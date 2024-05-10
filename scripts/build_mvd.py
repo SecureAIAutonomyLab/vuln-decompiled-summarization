@@ -67,17 +67,6 @@ def extract_data(path: Path, language: Language) -> dict[Literal['vulnerable', '
     cwe_func_nodes = (n for n, _ in language.query('(function_definition) @func-decl').captures(ast.root_node)
                       if any(re.findall(r'CWE\d+', d.text.decode())
                              for d, _ in language.query('(function_declarator declarator: (identifier) @func_name)').captures(n)))
-    # Find good sink functions
-    good_sink_funcs = (n for n, _ in language.query('(function_definition) @func-decl').captures(ast.root_node)
-                       if d.text.decode().startswith('good')
-                       for d, _ in language.query('(function_declarator declarator: (identifier) @func_name)').captures(n))
-    # Rewrite good sink functions to be inline
-    for good_sink_func in good_sink_funcs:
-        orig_func_code = good_sink_func.text.decode()
-        if not orig_func_code.startswith('inline'):
-            inline_func_code = f'inline {orig_func_code}'
-            path.write_text(path.read_text().replace(orig_func_code,
-                                                     inline_func_code))
     for cwe_func_node in cwe_func_nodes:
         # Get function name and comments
         func_name, = [n.text.decode() for n, _ in language.query(
