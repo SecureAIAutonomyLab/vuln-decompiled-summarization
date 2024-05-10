@@ -38,8 +38,8 @@ def extract_code(response: str) -> str:
 new_data = {'repo': [], 'benign_src_code': [], 'benign_decompiled': [], 'src_file': [],
             'gpt-4_vuln_code': [], 'gpt-4_response': [], 'cwe': []}
 rows = []
-for cwe, quantity in track(CWE_QUANTITIES.items(),
-                           description='Generating vulnerable samples...'):
+for cwe in track(list(itertools.chain.from_iterable([t[0]] * t[1] for t in CWE_QUANTITIES.items())),
+                 description='Generating vulnerable samples...'):
     if not rows:
         # Reset samples
         rows = [t[1] for t in df.iterrows()]
