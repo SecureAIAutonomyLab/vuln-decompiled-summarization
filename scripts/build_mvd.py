@@ -20,7 +20,7 @@ MVD_GITHUB_URL: Final[str] = 'https://github.com/muVulDeePecker/muVulDeePecker/a
 TREE_SITTER_C_GITHUB_URL: Final[str] = 'https://github.com/tree-sitter/tree-sitter-c/archive/refs/heads/master.zip'
 TREE_SITTER_CPP_GITHUB_URL: Final[str] = 'https://github.com/tree-sitter/tree-sitter-cpp/archive/refs/heads/master.zip'
 GHIDRA_HEADLESS_ENVVAR: Final[str] = 'GHIDRA_HEADLESS'
-GHIDRA_SCRIPT_DIR: Final[Path] = Path(__file__).parent / 'ghidra_scripts'
+GHIDRA_SCRIPT_DIR: Final[Path] = Path.home() / 'ghidra_scripts'
 DECOMPILE_FUNCTION_SCRIPT: Final[Path] = GHIDRA_SCRIPT_DIR / \
     'write_decompiled_functions.py'
 CHECKPOINT_FILE: Final[Path] = Path(__file__).parent / '.checkpoint'
