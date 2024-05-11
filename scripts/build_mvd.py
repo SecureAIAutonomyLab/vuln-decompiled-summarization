@@ -156,6 +156,9 @@ def generate_sample(cwe_file: Path, languages_file: Path, commands: list[str],
                     else:
                         key = 'vulnerable' if omit_def == 'OMITGOOD' else 'patched'
                         for func in cwe_file_data[key]:
+                            if func.startswith('good') and omit_def == 'OMITBAD':
+                                # Cheap workaround to not waste time decompiling
+                                continue
                             try:
                                 decompiled_code = get_decompiled_function(func, Path(out_file.name),
                                                                           ghidra,
@@ -163,10 +166,11 @@ def generate_sample(cwe_file: Path, languages_file: Path, commands: list[str],
                             except ValueError as e:
                                 logger.debug(e)
                                 logger.error('Could not get decompiled ' +
-                                             f'"{func}" function')
+                                             f'"{func}" function in -D {omit_def}')
                                 errors += 1
                             else:
                                 samples.append({**cwe_file_data[key][func],
+                                                'file': cwe_file,
                                                 'function': func,
                                                 'decompiled_code': decompiled_code,
                                                 'compiler_options': [compiler, *options]})
