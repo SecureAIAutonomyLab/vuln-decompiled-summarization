@@ -4,6 +4,7 @@ import os
 import pandas as pd
 import subprocess
 import re
+import warnings
 
 from concurrent.futures import ProcessPoolExecutor
 from datasets import DownloadManager
@@ -20,11 +21,12 @@ MVD_GITHUB_URL: Final[str] = 'https://github.com/muVulDeePecker/muVulDeePecker/a
 TREE_SITTER_C_GITHUB_URL: Final[str] = 'https://github.com/tree-sitter/tree-sitter-c/archive/refs/heads/master.zip'
 TREE_SITTER_CPP_GITHUB_URL: Final[str] = 'https://github.com/tree-sitter/tree-sitter-cpp/archive/refs/heads/master.zip'
 GHIDRA_HEADLESS_ENVVAR: Final[str] = 'GHIDRA_HEADLESS'
-GHIDRA_SCRIPT_DIR: Final[Path] = Path.home() / 'ghidra_scripts'
+GHIDRA_SCRIPT_DIR: Final[Path] = Path(__file__).parent / 'ghidra_scripts'
 DECOMPILE_FUNCTION_SCRIPT: Final[Path] = GHIDRA_SCRIPT_DIR / \
-    'write_decompiled_functions.py'
+    'write_decompiled_function.py'
 CHECKPOINT_FILE: Final[Path] = Path(__file__).parent / '.checkpoint'
 
+warnings.filterwarnings('ignore', category=FutureWarning)
 app = Typer()
 logging.basicConfig(
     level=logging.INFO, format='%(message)s', datefmt='[%X]',
@@ -43,9 +45,9 @@ def parse_command(command: str) -> str:
     except FileNotFoundError as e:
         raise BadParameter(f'Unsupported compiler: {compiler}') from e
     match compiler:
-        case 'gcc' | 'g++':
+        case 'gcc' | 'g++' | 'clang':
             errs = '\n'.join((l for l in out.splitlines()
-                             if not any(s in l for s in ['fatal error: no input files',
+                             if not any(s in l for s in ['error: no input files',
                                                          'compilation terminated.']))).strip()
         case _:
             raise NotImplementedError(f'Unknown compiler: "{compiler}"')
@@ -66,7 +68,7 @@ def extract_data(path: Path, language: Language) -> dict[Literal['vulnerable', '
     # Find CWE functions
     cwe_func_nodes = (n for n, _ in language.query('(function_definition) @func-decl').captures(ast.root_node)
                       for d, _ in language.query('(function_declarator declarator: (identifier) @func_name)').captures(n)
-                      if ['good', 'bad'] in d.text.decode())
+                      if any(k in d.text.decode() for k in ['good', 'bad']))
     for cwe_func_node in cwe_func_nodes:
         # Get function name and comments
         func_name, = [n.text.decode() for n, _ in language.query(
@@ -89,19 +91,25 @@ def extract_data(path: Path, language: Language) -> dict[Literal['vulnerable', '
 
 
 def get_decompiled_function(function: str, path: Path, ghidra: Path, ghidra_dir: Path) -> str:
-    with NamedTemporaryFile(suffix='.c', delete_on_close=False) as decompiled_file:
+    with NamedTemporaryFile(suffix='.c', delete=False) as decompiled_file:
         decompiled_file = Path(decompiled_file.name)
         try:
             subprocess.run([ghidra, ghidra_dir, f'MVDProject_PID_{os.getpid()}',
                             '-import', path, '-scriptPath', GHIDRA_SCRIPT_DIR,
                             '-noanalysis', '-overwrite', '-postScript', DECOMPILE_FUNCTION_SCRIPT,
-                            function, decompiled_file], check=True, capture_output=True)
+                            function, decompiled_file], check=True, capture_output=True, text=True)
             if decompiled_code := decompiled_file.read_text():
                 return decompiled_code
             raise ValueError('Decompiled code was not written')
-        except (subprocess.CalledProcessError, ValueError) as e:
+        except ValueError as e:
             raise ValueError('Could not get decompiled function: ' +
-                             f'"{function}"') from e
+                             f'"{function}" because it was unexpectedly not written') from e
+        except subprocess.CalledProcessError as e:
+            logger.debug(e.stdout)
+            raise ValueError('Could not get decompiled function: ' +
+                             f'"{function}" due to a Ghidra error.') from e
+        finally:
+            decompiled_file.unlink()
 
 
 def generate_sample(cwe_file: Path, languages_file: Path, commands: list[str],
@@ -111,10 +119,12 @@ def generate_sample(cwe_file: Path, languages_file: Path, commands: list[str],
     # Get compile commands and grammar for C or C++ sample
     if cwe_file.suffix == '.c':
         language = Language(str(languages_file), 'c')
-        current_commands = [c for c in commands if 'gcc' in c]
+        current_commands = [c for c in commands if any(
+            comp in c for comp in ['gcc', 'clang'])]
     else:
         language = Language(str(languages_file), 'cpp')
-        current_commands = [c for c in commands if 'g++' in c]
+        current_commands = [c for c in commands if any(
+            comp in c for comp in ['g++', 'clang'])]
     try:
         # Extract source code comments, and other data
         cwe_file_data = extract_data(cwe_file, language)
@@ -131,7 +141,7 @@ def generate_sample(cwe_file: Path, languages_file: Path, commands: list[str],
             compiler, *options = command.split()
             # Compile vulnerable/non-vulnerable
             for omit_def in ['OMITGOOD', 'OMITBAD']:
-                with NamedTemporaryFile(suffix='.exe', delete_on_close=False) as out_file:
+                with NamedTemporaryFile(suffix='.exe', delete=False) as out_file:
                     out_file.close()
                     # Compile sample
                     try:
@@ -151,6 +161,7 @@ def generate_sample(cwe_file: Path, languages_file: Path, commands: list[str],
                                                                           ghidra,
                                                                           ghidra_dir)
                             except ValueError as e:
+                                logger.debug(e)
                                 logger.error('Could not get decompiled ' +
                                              f'"{func}" function')
                                 errors += 1
@@ -159,6 +170,8 @@ def generate_sample(cwe_file: Path, languages_file: Path, commands: list[str],
                                                 'function': func,
                                                 'decompiled_code': decompiled_code,
                                                 'compiler_options': [compiler, *options]})
+                    finally:
+                        Path(out_file.name).unlink()
     return samples, errors
 
 
@@ -172,10 +185,16 @@ def command(path: Annotated[Path, Argument(help='CSV file to store the dataset.'
                                                      help="Path to Ghidra's analyzeHeadless command.")] = None,
             workers: Annotated[Optional[int], Option(min=1,
                                                      help='Number of subprocesses to build the dataset.')] = None,
-            checkpoint: Annotated[int, Option(min=1, help='How many samples until checkpoint.')] = 10) -> None:
+            checkpoint: Annotated[int, Option(
+                min=1, help='How many samples until checkpoint.')] = 10,
+            overwrite: Annotated[bool, Option(
+                help='Overwrite checkpoint file.')] = False,
+            verbose: Annotated[bool, Option(help='Show verbose logging.')] = False) -> None:
     '''
     Compiles the dataset, associating source code summaries with decompiled snippets.
     '''
+    if verbose:
+        logger.setLevel(logging.DEBUG)
     if not ghidra:
         # Get Ghidra path
         if ghidra_path := os.environ.get(GHIDRA_HEADLESS_ENVVAR):
@@ -198,7 +217,7 @@ def command(path: Annotated[Path, Argument(help='CSV file to store the dataset.'
     cwe_files = (mvd_path / 'muVulDeePecker-master' /
                  'source files' / 'upload_source_1').rglob('*CWE*.c')
     cwe_files = sorted(cwe_files)
-    if CHECKPOINT_FILE.exists():
+    if CHECKPOINT_FILE.exists() and not overwrite:
         checkpoint = int(CHECKPOINT_FILE.read_text()) + 1
         # Load from checkpoint
         logger.warning(
@@ -242,7 +261,7 @@ def command(path: Annotated[Path, Argument(help='CSV file to store the dataset.'
                         df = pd.concat(
                             [df, pd.Series(sample).to_frame().T], ignore_index=True)
                         progress.advance(task)
-                    if idx % checkpoint == 0:
+                    if idx > 0 and idx % checkpoint == 0:
                         # Create a checkpoint
                         logger.info('Checkpoint saved')
                         CHECKPOINT_FILE.write_text(str(idx))
