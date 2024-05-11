@@ -65,8 +65,8 @@ def extract_data(path: Path, language: Language) -> dict[Literal['vulnerable', '
     ast = parser.parse(path.read_bytes())
     # Find CWE functions
     cwe_func_nodes = (n for n, _ in language.query('(function_definition) @func-decl').captures(ast.root_node)
-                      if any(re.findall(r'CWE\d+', d.text.decode())
-                             for d, _ in language.query('(function_declarator declarator: (identifier) @func_name)').captures(n)))
+                      for d, _ in language.query('(function_declarator declarator: (identifier) @func_name)').captures(n)
+                      if ['good', 'bad'] in d.text.decode())
     for cwe_func_node in cwe_func_nodes:
         # Get function name and comments
         func_name, = [n.text.decode() for n, _ in language.query(
