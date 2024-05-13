@@ -1,3 +1,6 @@
+# No hang-up output
+nohup.out
+
 # MVD Checkpoints
 .checkpoint
 

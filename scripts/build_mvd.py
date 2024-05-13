@@ -156,9 +156,6 @@ def generate_sample(cwe_file: Path, languages_file: Path, commands: list[str],
                     else:
                         key = 'vulnerable' if omit_def == 'OMITGOOD' else 'patched'
                         for func in cwe_file_data[key]:
-                            if func.startswith('good') and omit_def == 'OMITBAD':
-                                # Cheap workaround to not waste time decompiling
-                                continue
                             try:
                                 decompiled_code = get_decompiled_function(func, Path(out_file.name),
                                                                           ghidra,
