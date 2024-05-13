@@ -109,7 +109,7 @@ def get_decompiled_function(function: str, path: Path, ghidra: Path, ghidra_dir:
             raise ValueError('Could not get decompiled function: ' +
                              f'"{function}" due to a Ghidra error.') from e
         finally:
-            decompiled_file.unlink()
+            decompiled_file.unlink(missing_ok=True)
 
 
 def generate_sample(cwe_file: Path, languages_file: Path, commands: list[str],
@@ -172,7 +172,7 @@ def generate_sample(cwe_file: Path, languages_file: Path, commands: list[str],
                                                 'decompiled_code': decompiled_code,
                                                 'compiler_options': [compiler, *options]})
                     finally:
-                        Path(out_file.name).unlink()
+                        Path(out_file.name).unlink(missing_ok=True)
     return samples, errors
 
 
@@ -268,7 +268,7 @@ def command(path: Annotated[Path, Argument(help='CSV file to store the dataset.'
                         CHECKPOINT_FILE.write_text(str(idx))
                         df.to_csv(path)
     # Save dataset
-    CHECKPOINT_FILE.unlink()
+    CHECKPOINT_FILE.unlink(missing_ok=True)
     df.to_csv(path)
 
 
