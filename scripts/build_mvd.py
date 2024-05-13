@@ -45,7 +45,7 @@ def parse_command(command: str) -> str:
     except FileNotFoundError as e:
         raise BadParameter(f'Unsupported compiler: {compiler}') from e
     match compiler:
-        case 'gcc' | 'g++' | 'clang':
+        case 'gcc' | 'g++' | 'clang' | 'aarch64-linux-gnu-gcc':
             errs = '\n'.join((l for l in out.splitlines()
                              if not any(s in l for s in ['error: no input files',
                                                          'compilation terminated.']))).strip()
@@ -120,11 +120,11 @@ def generate_sample(cwe_file: Path, languages_file: Path, commands: list[str],
     if cwe_file.suffix == '.c':
         language = Language(str(languages_file), 'c')
         current_commands = [c for c in commands if any(
-            comp in c for comp in ['gcc', 'clang'])]
+            comp in c for comp in ['gcc', 'clang', 'aarch64-linux-gnu-gcc'])]
     else:
         language = Language(str(languages_file), 'cpp')
         current_commands = [c for c in commands if any(
-            comp in c for comp in ['g++', 'clang'])]
+            comp in c for comp in ['g++', 'clang', 'aarch64-linux-gnu-gcc'])]
     try:
         # Extract source code comments, and other data
         cwe_file_data = extract_data(cwe_file, language)
