@@ -4,6 +4,8 @@ import os
 import pandas as pd
 import subprocess
 import re
+import tree_sitter_c as tsc
+import tree_sitter_cpp as tscpp
 import warnings
 
 from concurrent.futures import ProcessPoolExecutor
@@ -112,17 +114,17 @@ def get_decompiled_function(function: str, path: Path, ghidra: Path, ghidra_dir:
             decompiled_file.unlink(missing_ok=True)
 
 
-def generate_sample(cwe_file: Path, languages_file: Path, commands: list[str],
+def generate_sample(cwe_file: Path, commands: list[str],
                     ghidra: Path, ghidra_dir: Path) -> tuple[list[dict[str, Any]], int]:
     samples: list[dict[str, Any]] = []
     errors = 0
     # Get compile commands and grammar for C or C++ sample
     if cwe_file.suffix == '.c':
-        language = Language(str(languages_file), 'c')
+        language = Language(tsc.language())
         current_commands = [c for c in commands if any(
             comp in c for comp in ['gcc', 'clang', 'aarch64-linux-gnu-gcc'])]
     else:
-        language = Language(str(languages_file), 'cpp')
+        language = Language(tscpp.language())
         current_commands = [c for c in commands if any(
             comp in c for comp in ['g++', 'clang', 'aarch64-linux-gnu-gcc'])]
     try:
@@ -228,16 +230,6 @@ def command(path: Annotated[Path, Argument(help='CSV file to store the dataset.'
     else:
         df = pd.DataFrame()
 
-    # Download tree-sitter grammar implementations for C and C++
-    logger.info('Preparing C and C++ tree-sitter grammars...')
-    c_repo_path, cpp_repo_path = [Path(p) for p in DownloadManager(dataset_name='tree-sitter-langs')
-                                  .download_and_extract([TREE_SITTER_C_GITHUB_URL,
-                                                         TREE_SITTER_CPP_GITHUB_URL])]
-    # Build the language library for MVD
-    languages_file = Path.cwd() / 'mvd_languages.so'
-    Language.build_library(str(languages_file), [str(c_repo_path / 'tree-sitter-c-master'),
-                                                 str(cpp_repo_path / 'tree-sitter-cpp-master')])
-
     # Create a temporary directory for Ghidra
     with TemporaryDirectory() as ghidra_dir:
         ghidra_dir = Path(ghidra_dir)
@@ -252,7 +244,7 @@ def command(path: Annotated[Path, Argument(help='CSV file to store the dataset.'
                 'Building dataset...', total=len(cwe_files))
             progress.tasks[task].fields['errors'] = 0
             with progress:
-                for idx, results in enumerate(executor.map(generate_sample, cwe_files, itertools.repeat(languages_file),
+                for idx, results in enumerate(executor.map(generate_sample, cwe_files,
                                                            itertools.repeat(
                                                                commands), itertools.repeat(ghidra),
                                                            itertools.repeat(ghidra_dir))):

@@ -1,3 +1,7 @@
+# Slurm logs
+*.o*
+*.e*
+
 # No hang-up output
 nohup.out
 
