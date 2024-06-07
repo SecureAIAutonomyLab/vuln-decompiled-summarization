@@ -177,8 +177,7 @@ def generate_sample(cwe_file: Path, commands: list[str],
 
 
 @app.command()
-def command(path: Annotated[Path, Argument(help='CSV file to store the dataset.', dir_okay=False)] =
-            Path('/workspace') / 'storage' / 'mvd_decomp.csv',
+def command(path: Annotated[Path, Argument(help='CSV file to store the dataset.', dir_okay=False)] = ...,
             commands: Annotated[Optional[list[str]], Argument(help='Compiler commands to use ' +
                                                               'for each sample (e.g. "gcc -g -O0")',
                                                               parser=parse_command)] = None,
