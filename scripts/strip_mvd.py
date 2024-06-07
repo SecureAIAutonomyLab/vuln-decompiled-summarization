@@ -1,4 +1,5 @@
 import pandas as pd
+import sys
 import uuid
 
 from pathlib import Path
@@ -34,9 +35,9 @@ def strip_func(func_def: str) -> str:
     return stripped_def
 
 
-df = pd.read_csv('/workspace/storage/mvd_rebuilt.csv')
+df = pd.read_csv(sys.argv[1])
 test: str = df.iloc[0]['decompiled_code']
 
 df['stripped_decompiled_code'] = df['decompiled_code'].apply(strip_func)
 print(df)
-df.to_csv('/workspace/storage/mvd2_with_stripped.csv')
+df.to_csv(sys.argv[1])
