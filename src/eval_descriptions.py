@@ -4,6 +4,7 @@ import json
 import tensorflow as tf
 import tensorflow_hub as hub
 import numpy as np
+import sys
 
 # Load the Universal Sentence Encoder model
 model_url = "https://tfhub.dev/google/universal-sentence-encoder/4"
@@ -22,7 +23,7 @@ def cosine_similarity(embedding1, embedding2):
 def main():
     
     # Load JSON data from file
-    with open('../../Experiments_results/results_x86codellama_description.json', 'r') as f:
+    with open(sys.argv[1], 'r') as f:
         data = json.load(f)
         
     all_predictions = data.get('pred', [])

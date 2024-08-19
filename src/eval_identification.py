@@ -1,4 +1,5 @@
 import json
+import sys
 from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score
 
 # Load the JSON file
@@ -52,5 +53,5 @@ def main(file_path):
 
 # Example usage
 if __name__ == "__main__":
-    file_path = '../../Experiments_results/results_x86codellama_identification.json'
+    file_path = sys.argv[1]
     main(file_path)

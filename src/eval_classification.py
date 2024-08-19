@@ -1,8 +1,9 @@
+import sys
 import json
 from sklearn.metrics import precision_recall_fscore_support, accuracy_score
 
 # Load the JSON data
-with open('../../Experiments_results/results_x86codellama_classification.json') as f:
+with open(sys.argv[1]) as f:
     data = json.load(f)
 
 # Extract predictions and ground truth

@@ -1,3 +1,4 @@
+import sys
 import json
 
 # Function to replace underscores with spaces in a list of strings
@@ -6,8 +7,8 @@ def replace_underscores(data):
     return [item.replace('_', ' ') for item in data]
 
 # Read the JSON file
-input_file = '../../Experiments_results/results_x86codellama_functionname.json'
-output_file = '../../Experiments_results/results_x86codellama_functionname_modified.json'
+input_file = sys.argv[1]
+output_file = sys.argv[2]
 
 with open(input_file, 'r') as file:
     data = json.load(file)

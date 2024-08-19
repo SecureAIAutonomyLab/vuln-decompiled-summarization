@@ -10,6 +10,7 @@ import json
 import math
 import random
 import re
+import sys
 
 identification = [
     "As a specialist in code security, assess this decompiled code. Is there any vulnerability present? Respond with 'YES' or 'NO' only.",
@@ -191,8 +192,8 @@ def getPromptDescription(row):
     # ### Response:\n ''', answer
         
 def main():
-  
-    modelname = "../../x86_llama3"
+    
+    modelname = sys.argv[1]
     
     model = AutoModelForCausalLM.from_pretrained(
             modelname,
