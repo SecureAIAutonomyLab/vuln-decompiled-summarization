@@ -3,9 +3,9 @@
 export TRANSFORMERS_VERBOSITY=info
 export DS_SKIP_CUDA_CHECK=0
 
-torchrun --nproc_per_node=4 --master_port=2345 ../src/src/train.py \
+torchrun --nproc_per_node=4 --master_port=2345 ../src/train.py \
     --model_name_or_path codellama/CodeLlama-7b-hf \
-    --data_path ../data/mvd_rebuilt_50k_x86_4_tasks_split \
+    --data_path $50k_x86_4_TASKS_SPLIT \
     --output_dir ../x86_codellama \
     --num_train_epochs 4 \
     --per_device_train_batch_size 4 \

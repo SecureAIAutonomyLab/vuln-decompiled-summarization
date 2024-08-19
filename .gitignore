@@ -3,7 +3,7 @@ calc_numbers.py
 # No hang-up output
 nohup.out
 
-# MVD Checkpoints
+# Checkpoints
 .checkpoint
 
 # VSCode

@@ -19,7 +19,7 @@ from tree_sitter import Language, Parser
 from typer import Argument, BadParameter, Option, Typer
 from typing import Annotated, Any, Final, Generator, Literal, Optional
 
-MVD_GITHUB_URL: Final[str] = 'https://github.com/muVulDeePecker/muVulDeePecker/archive/refs/heads/master.zip'
+DATASET_URL: Final[str] = os.environ['DATASET_URL']
 GHIDRA_HEADLESS_ENVVAR: Final[str] = 'GHIDRA_HEADLESS'
 GHIDRA_SCRIPT_DIR: Final[Path] = Path(__file__).parent / 'ghidra_scripts'
 DECOMPILE_FUNCTION_SCRIPT: Final[Path] = GHIDRA_SCRIPT_DIR / \
@@ -94,7 +94,7 @@ def get_decompiled_function(function: str, path: Path, ghidra: Path, ghidra_dir:
     with NamedTemporaryFile(suffix='.c', delete=False) as decompiled_file:
         decompiled_file = Path(decompiled_file.name)
         try:
-            subprocess.run([ghidra, ghidra_dir, f'MVDProject_PID_{os.getpid()}',
+            subprocess.run([ghidra, ghidra_dir, f'Project_PID_{os.getpid()}',
                             '-import', path, '-scriptPath', GHIDRA_SCRIPT_DIR,
                             '-noanalysis', '-overwrite', '-postScript', DECOMPILE_FUNCTION_SCRIPT,
                             function, decompiled_file], check=True, capture_output=True, text=True)
@@ -210,11 +210,11 @@ def command(path: Annotated[Path, Argument(help='CSV file to store the dataset.'
         if not any(compiler in c for c in commands):
             commands.append(compiler)
 
-    # Download MVD
-    logger.info('Preparing MVD...')
-    mvd_path = Path(DownloadManager(dataset_name='MVD')
-                    .download_and_extract(MVD_GITHUB_URL))  # type: ignore
-    cwe_files = (mvd_path / 'muVulDeePecker-master' /
+    # Download dataset
+    logger.info('Preparing dataset...')
+    dataset_path = Path(DownloadManager(dataset_name='Custom Dataset')
+                    .download_and_extract(DATASET_URL))  # type: ignore
+    cwe_files = (dataset_path / 'muVulDeePecker-master' /
                  'source files' / 'upload_source_1').rglob('*CWE*.c')
     cwe_files = sorted(cwe_files)
     if CHECKPOINT_FILE.exists() and not overwrite:
