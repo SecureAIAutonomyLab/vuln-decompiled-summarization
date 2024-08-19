@@ -192,7 +192,7 @@ def getPromptDescription(row):
         
 def main():
   
-    modelname = "../../x86_codeLlama"
+    modelname = os.environ['CODE_LLAMA_PATH']
     
     model = AutoModelForCausalLM.from_pretrained(
             modelname,
@@ -207,7 +207,7 @@ def main():
     tokenizer.pad_token = tokenizer.eos_token
     tokenizer.padding_side = "right"
     
-    dataset = load_from_disk('../../data/mvd_rebuilt_50k_x86_4_tasks_split')
+    dataset = load_from_disk(os.environ['50k_x86_4_TASKS_SPLIT'])
     dataset_test = dataset['test']
     pred = []
     gt =[]
@@ -281,7 +281,7 @@ def main():
         "gt": gt
     }
 
-    resultFile = "../../Experiments_results/result_X86_50k_codeLlama_200_samples_x86_identification.json"
+    resultFile = os.environ['50k_x86_4_TASKS_SPLIT_IDENTIFICATION']
     with open(resultFile, "w") as f:
         json.dump(result, f, indent=4)
         

@@ -1,6 +1,4 @@
-# Slurm logs
-*.o*
-*.e*
+calc_numbers.py
 
 # No hang-up output
 nohup.out

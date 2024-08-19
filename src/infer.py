@@ -207,7 +207,7 @@ def main():
     tokenizer.pad_token = tokenizer.eos_token
     tokenizer.padding_side = "right"
     
-    dataset = load_from_disk('../../data/mvd_rebuilt_50k_x86_4_tasks_split')
+    dataset = load_from_disk(os.environ['50k_x86_4_TASKS_SPLIT'])
     dataset_test = dataset['test']
     pred = []
     gt =[]
@@ -281,7 +281,7 @@ def main():
         "gt": gt
     }
 
-    resultFile = "../../Experiments_results/result_X86_50k_llama3_200_samples_x86_description.json"
+    resultFile = os.environ['50k_x86_4_TASKS_SPLIT_RESULTS']
     with open(resultFile, "w") as f:
         json.dump(result, f, indent=4)
         
