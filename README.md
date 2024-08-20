@@ -1,10 +1,10 @@
 # Enhancing Reverse Engineering: Investigating and Benchmarking Large Language Models for Vulnerability Analysis in Decompiled Binaries
 
-This repository contains the QA4BinVul dataset, source code, and experimental results of the paper Enhancing Reverse Engineering: Investigating and Benchmarking Large Language Models for Vulnerability Analysis in Decompiled Binaries.
+This repository contains the DeBinVul dataset, source code, and experimental results of the paper Enhancing Reverse Engineering: Investigating and Benchmarking Large Language Models for Vulnerability Analysis in Decompiled Binaries.
 
-## QA4BinVul Dataset
+## DeBinVul Dataset
 
-The dataset is a compressed CSV file stored as `QA4BinVul.zip`.
+The dataset is a compressed CSV file stored as `DeBinVul.zip`.
 
 ## Other Repository Contents
 
